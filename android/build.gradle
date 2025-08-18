@@ -1,0 +1,33 @@
+// File: android/build.gradle
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+// [PERUBAHAN] Blok ini akan secara otomatis memperbaiki plugin yang bermasalah
+allprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            android {
+                // Ini adalah baris kuncinya.
+                // Gradle akan menggunakan compileSdkVersion dari app/build.gradle Anda
+                compileSdkVersion 34
+            }
+        }
+    }
+}
+
+rootProject.buildDir = '../build'
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(':app')
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
