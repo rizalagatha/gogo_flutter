@@ -194,7 +194,7 @@ class _KegiatanDetailScreenState extends State<KegiatanDetailScreen> {
           ),
           children: [
             TileLayer(
-              urlTemplate: 'http://googleusercontent.com/tile/{z}/{x}/{y}.png',
+              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'com.example.gogo_flutter', // Ganti dengan package name Anda
             ),
             MarkerLayer(markers: _markers),
