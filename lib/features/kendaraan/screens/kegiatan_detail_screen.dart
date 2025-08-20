@@ -2,8 +2,10 @@
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 // Import model dan halaman yang relevan
 import '../../../data/models/kegiatan_detail_model.dart';
@@ -24,8 +26,9 @@ class _KegiatanDetailScreenState extends State<KegiatanDetailScreen> {
   String? _errorMessage;
   KegiatanDetail? _mainData;
   List<KegiatanSubDetail> _subDetails = [];
-  final Set<Marker> _markers = {};
-  GoogleMapController? _mapController;
+  final MapController _mapController = MapController();
+  List<Marker> _markers = [];
+  LatLng? _initialCenter;
 
   @override
   void initState() {
@@ -51,7 +54,6 @@ class _KegiatanDetailScreenState extends State<KegiatanDetailScreen> {
             setState(() {
               _mainData = KegiatanDetail.fromJson(data['main_data']);
 
-              // 🚀 ubah bagian foto di sini jadi full URL
               _subDetails = (data['sub_details'] as List).map((json) {
                 if (json['foto'] != null &&
                     json['foto'].toString().isNotEmpty) {
@@ -59,6 +61,7 @@ class _KegiatanDetailScreenState extends State<KegiatanDetailScreen> {
                 }
                 return KegiatanSubDetail.fromJson(json);
               }).toList();
+              _setupMapMarkers(); // Panggil setup markers setelah data siap
             });
           } else {
             setState(() => _errorMessage = data['message']);
@@ -79,38 +82,21 @@ class _KegiatanDetailScreenState extends State<KegiatanDetailScreen> {
   }
 
   void _setupMapMarkers() {
-    final markers = <Marker>{};
+    final markers = <Marker>[];
     LatLng? firstCoordinate;
 
     for (final detail in _subDetails) {
       if (detail.latitude != null && detail.longitude != null) {
         final position = LatLng(detail.latitude!, detail.longitude!);
-        firstCoordinate ??=
-            position; // Keep track of the first valid coordinate
+        firstCoordinate ??= position;
         markers.add(
           Marker(
-            markerId: MarkerId(detail.id.toString()),
-            position: position,
-            infoWindow: InfoWindow(
-              title: detail.customer,
-              snippet: 'Jam: ${detail.jam}',
-              onTap: () {
-                if (detail.fotoUrl != null && detail.fotoUrl!.isNotEmpty) {
-                  showDialog(
-                    context: context,
-                    builder: (_) => Dialog(
-                      child: InteractiveViewer(
-                        child: Image.network(
-                          "${Config.baseUrl}/uploads/${detail.fotoUrl}", // 👈 tambahkan baseUrl di sini
-                          fit: BoxFit.contain,
-                          errorBuilder: (ctx, err, stack) =>
-                              const Icon(Icons.broken_image, size: 100),
-                        ),
-                      ),
-                    ),
-                  );
-                }
-              },
+            width: 80.0,
+            height: 80.0,
+            point: position,
+            child: Tooltip(
+              message: detail.customer,
+              child: Icon(Icons.location_pin, color: Colors.red, size: 40.0),
             ),
           ),
         );
@@ -118,13 +104,18 @@ class _KegiatanDetailScreenState extends State<KegiatanDetailScreen> {
     }
 
     setState(() {
-      _markers.addAll(markers);
+      _markers = markers;
+      // [PERBAIKAN] Simpan koordinat awal ke state, jangan panggil .move()
+      _initialCenter = firstCoordinate;
     });
+  }
 
-    // Animate camera to the first location
-    if (firstCoordinate != null) {
-      _mapController
-          ?.animateCamera(CameraUpdate.newLatLngZoom(firstCoordinate, 14));
+  Future<void> _launchMapsUrl(double lat, double lng) async {
+    final Uri url = Uri.parse('http://www.openstreetmap.org/#map=18/$lat/$lng');
+    if (!await launchUrl(url)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak bisa membuka peta')),
+      );
     }
   }
 
@@ -189,24 +180,25 @@ class _KegiatanDetailScreenState extends State<KegiatanDetailScreen> {
     );
   }
 
-  Widget _buildMapCard() {
+   Widget _buildMapCard() {
     return Expanded(
       flex: 3,
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 8.0),
         clipBehavior: Clip.antiAlias,
-        child: GoogleMap(
-          onMapCreated: (controller) {
-            _mapController = controller;
-            _setupMapMarkers(); // Recenter map if it loads after markers are set
-          },
-          initialCameraPosition: CameraPosition(
-            target: _markers.isNotEmpty
-                ? _markers.first.position
-                : const LatLng(-7.565, 110.825), // fallback koordinat default
-            zoom: 12,
+        child: FlutterMap(
+          mapController: _mapController,
+          options: MapOptions(
+            initialCenter: _initialCenter ?? const LatLng(-7.565, 110.825), // Fallback ke koordinat default
+            initialZoom: 12,
           ),
-          markers: _markers,
+          children: [
+            TileLayer(
+              urlTemplate: 'http://googleusercontent.com/tile/{z}/{x}/{y}.png',
+              userAgentPackageName: 'com.example.gogo_flutter', // Ganti dengan package name Anda
+            ),
+            MarkerLayer(markers: _markers),
+          ],
         ),
       ),
     );
@@ -230,41 +222,39 @@ class _KegiatanDetailScreenState extends State<KegiatanDetailScreen> {
                     itemCount: _subDetails.length,
                     itemBuilder: (context, index) {
                       final detail = _subDetails[index];
+                      final hasPhoto = detail.fotoUrl != null && detail.fotoUrl!.isNotEmpty;
+                      final photoUrl = hasPhoto ? "${Config.baseUrl}/uploads/${detail.fotoUrl}" : null;
+                      final hasLocation = detail.latitude != null && detail.longitude != null;
+
                       return ListTile(
-                        leading: detail.fotoUrl != null &&
-                                detail.fotoUrl!.isNotEmpty
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  "${Config.baseUrl}/uploads/${detail.fotoUrl}", // 👈 tambahkan baseUrl di sini
-                                  width: 50,
-                                  height: 50,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (ctx, err, stack) =>
-                                      const Icon(Icons.broken_image, size: 40),
-                                ),
-                              )
-                            : CircleAvatar(child: Text('${index + 1}')),
+                        leading: GestureDetector(
+                          onTap: hasPhoto ? () {
+                            showDialog(context: context, builder: (_) => Dialog(child: Padding(padding: const EdgeInsets.all(8.0), child: InteractiveViewer(child: Image.network(photoUrl!)))));
+                          } : null,
+                          child: CircleAvatar(
+                            // [PERBAIKAN] Menggunakan photoUrl yang sudah dibangun
+                            backgroundImage: hasPhoto ? NetworkImage(photoUrl!) : null,
+                            child: !hasPhoto ? Text('${index + 1}') : null,
+                          ),
+                        ),
                         title: Text(detail.customer),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('Jam: ${detail.jam}'),
-                            if (detail.latitude != null &&
-                                detail.longitude != null)
-                              Text(
-                                  'Lokasi: ${detail.latitude}, ${detail.longitude}'),
+                            if (hasLocation)
+                              InkWell(
+                                onTap: () => _launchMapsUrl(detail.latitude!, detail.longitude!),
+                                child: const Padding(
+                                  padding: EdgeInsets.only(top: 4.0),
+                                  child: Text('Lihat di Peta', style: TextStyle(color: Colors.blue, decoration: TextDecoration.underline)),
+                                ),
+                              ),
                           ],
                         ),
                         onTap: () {
-                          if (detail.latitude != null &&
-                              detail.longitude != null) {
-                            _mapController?.animateCamera(
-                              CameraUpdate.newLatLngZoom(
-                                LatLng(detail.latitude!, detail.longitude!),
-                                16,
-                              ),
-                            );
+                          if (hasLocation) {
+                            _mapController.move(LatLng(detail.latitude!, detail.longitude!), 16.0);
                           }
                         },
                       );
