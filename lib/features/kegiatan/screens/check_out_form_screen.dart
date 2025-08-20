@@ -9,7 +9,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../data/models/user_model.dart';
 import '../../../data/models/checkout_job_model.dart';
-import '../../kegiatan/widgets/check_out_list_loading.dart';
+import '../widgets/check_out_form_loading.dart';
 import '../../../../config.dart'; 
 
 class CheckOutFormScreen extends StatefulWidget {

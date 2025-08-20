@@ -9,7 +9,7 @@ import '../../../core/widgets/empty_state_widget.dart';
 import '../../../data/models/daftar_job_model.dart';
 import 'daftar_job_detail_screen.dart';
 import '../widgets/job_list_loading.dart';
-import '../../../../config.dart'; 
+import '../../../../config.dart';
 
 class DaftarJobScreen extends StatefulWidget {
   const DaftarJobScreen({super.key});
@@ -48,23 +48,26 @@ class _DaftarJobScreenState extends State<DaftarJobScreen> {
       final response = await http
           .get(Uri.parse('${Config.baseUrl}/jobs'))
           .timeout(const Duration(seconds: 10));
-          
+
       if (mounted) {
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
           if (data['success'] == true) {
             List<dynamic> jobJson = data['data'];
             setState(() {
-              _jobList = jobJson.map((json) => DaftarJob.fromJson(json)).toList();
+              _jobList =
+                  jobJson.map((json) => DaftarJob.fromJson(json)).toList();
               _filteredList = _jobList;
             });
           } else {
-             setState(() => _errorMessage = data['message'] ?? 'Gagal memuat data');
+            setState(
+                () => _errorMessage = data['message'] ?? 'Gagal memuat data');
           }
         }
       }
     } on TimeoutException {
-      setState(() => _errorMessage = 'Server tidak merespons. Periksa koneksi Anda.');
+      setState(() =>
+          _errorMessage = 'Server tidak merespons. Periksa koneksi Anda.');
     } catch (e) {
       setState(() => _errorMessage = 'Terjadi kesalahan: $e');
     } finally {
@@ -79,8 +82,11 @@ class _DaftarJobScreenState extends State<DaftarJobScreen> {
     setState(() {
       _filteredList = _jobList.where((job) {
         return job.nomor.toLowerCase().contains(query) ||
-               job.customer.toLowerCase().contains(query) ||
-               job.uraian.toLowerCase().contains(query);
+            job.customer.toLowerCase().contains(query) ||
+            job.uraian.toLowerCase().contains(query) ||
+            job.status.toLowerCase().contains(query) ||
+            job.userPeminta.toLowerCase().contains(query) ||
+            job.driver?.toLowerCase().contains(query) == true;
       }).toList();
     });
   }
@@ -89,7 +95,7 @@ class _DaftarJobScreenState extends State<DaftarJobScreen> {
     if (status.toLowerCase() == 'proses') {
       return Colors.orange.shade700;
     }
-    return Colors.green; 
+    return Colors.green;
   }
 
   Widget _buildContent() {
@@ -119,7 +125,7 @@ class _DaftarJobScreenState extends State<DaftarJobScreen> {
     return RefreshIndicator(
       onRefresh: _fetchJobs,
       child: ListView.builder(
-        padding: const EdgeInsets.only(bottom: 80), 
+        padding: const EdgeInsets.only(bottom: 80),
         itemCount: _filteredList.length,
         itemBuilder: (context, index) {
           final job = _filteredList[index];
@@ -127,7 +133,8 @@ class _DaftarJobScreenState extends State<DaftarJobScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             elevation: 2,
             shadowColor: Colors.black.withOpacity(0.1),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             child: InkWell(
               borderRadius: BorderRadius.circular(10),
               onTap: () {
@@ -146,27 +153,40 @@ class _DaftarJobScreenState extends State<DaftarJobScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(job.nomor, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text(job.nomor,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16)),
                         Chip(
                           label: Text(
                             job.status,
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12),
                           ),
                           backgroundColor: _getStatusColor(job.status),
                           padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          labelPadding: const EdgeInsets.symmetric(horizontal: 2),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          labelPadding:
+                              const EdgeInsets.symmetric(horizontal: 2),
                         ),
                       ],
                     ),
                     const Divider(height: 16),
-                    _buildInfoRow(Icons.business_outlined, 'Customer', job.customer),
-                    _buildInfoRow(Icons.description_outlined, 'Uraian', job.uraian),
+                    _buildInfoRow(
+                        Icons.business_outlined, 'Customer', job.customer),
+                    _buildInfoRow(
+                        Icons.description_outlined, 'Uraian', job.uraian),
                     _buildInfoRow(Icons.flag_outlined, 'Tipe', job.tipeJadwal),
-                    _buildInfoRow(Icons.person_outline, 'Peminta', job.userPeminta),
-                    _buildInfoRow(Icons.directions_car_outlined, 'Driver', job.driver ?? '-'),
-                    _buildInfoRow(Icons.calendar_today_outlined, 'Tgl Kerja', job.tglKerja),
-                    _buildInfoRow(Icons.access_time_outlined, 'Jam Kerja', job.jamKerja),
+                    _buildInfoRow(
+                        Icons.person_outline, 'Peminta', job.userPeminta),
+                    _buildInfoRow(Icons.directions_car_outlined, 'Driver',
+                        job.driver ?? '-'),
+                    _buildInfoRow(Icons.calendar_today_outlined, 'Tgl Kerja',
+                        job.tglKerja),
+                    _buildInfoRow(
+                        Icons.access_time_outlined, 'Jam Kerja', job.jamKerja),
                   ],
                 ),
               ),
@@ -186,7 +206,9 @@ class _DaftarJobScreenState extends State<DaftarJobScreen> {
           Icon(icon, size: 16, color: Colors.grey[600]),
           const SizedBox(width: 8),
           Text('$label: ', style: TextStyle(color: Colors.grey[600])),
-          Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500))),
+          Expanded(
+              child: Text(value,
+                  style: const TextStyle(fontWeight: FontWeight.w500))),
         ],
       ),
     );
@@ -205,7 +227,8 @@ class _DaftarJobScreenState extends State<DaftarJobScreen> {
               decoration: InputDecoration(
                 hintText: 'Cari job...',
                 prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ),

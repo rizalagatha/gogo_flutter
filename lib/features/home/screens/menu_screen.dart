@@ -16,7 +16,7 @@ import '../../monitoring/screens/monitoring_screen.dart';
 import '../../kegiatan/screens/check_in_screen.dart';
 import '../../kegiatan/screens/check_out_list_screen.dart';
 import '../../kendaraan/screens/daftar_kendaraan_screen.dart';
-import '../../update_info/screens/update_info_screen.dart';
+import '../../update_info/screens/update_info_list_screen.dart';
 import '../../../core/providers/theme_provider.dart';
 import '../../job/screens/daftar_job_batal_screen.dart';
 import '../../../../config.dart';
@@ -156,45 +156,6 @@ class _MenuScreenState extends State<MenuScreen> {
     }
   }
 
-  void _onUpdateInfoTapped() async {
-    try {
-      final response = await http.get(Uri.parse(
-          '${Config.baseUrl}/kegiatan/check-open?user_kode=${widget.user.kode}'));
-
-      if (!mounted) return;
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true) {
-          if (data['has_open_job'] == true) {
-            final int kegiatanId = int.parse('${data['kegiatan_id']}');
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => UpdateInfoScreen(
-                  user: widget.user,
-                  kegiatanId: kegiatanId,
-                ),
-              ),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                    'Tidak ada kegiatan yang sedang berjalan untuk diupdate.'),
-              ),
-            );
-          }
-        }
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-    }
-  }
-
   Future<void> _getAppVersion() async {
     try {
       final response = await http.get(Uri.parse('${Config.baseUrl}/app-version'));
@@ -277,7 +238,12 @@ class _MenuScreenState extends State<MenuScreen> {
       {
         'icon': Icons.info_outline,
         'title': 'Update Info',
-        'onTap': _onUpdateInfoTapped,
+        'onTap': () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => UpdateInfoListScreen(user: widget.user),
+              ),
+            ),
       },
       {
         'icon': Icons.history_edu_outlined,

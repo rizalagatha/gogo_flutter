@@ -40,7 +40,6 @@ class _HistoryJobScreenState extends State<HistoryJobScreen> {
     final formattedEndDate = DateFormat('yyyy-MM-dd').format(_endDate);
 
     final url = '${Config.baseUrl}/karyawan/${widget.karyawan.kode}/history?start_date=$formattedStartDate&end_date=$formattedEndDate';
-    print("[DEBUG] URL: $url");
 
     try {
       final response = await http.get(Uri.parse(url));
@@ -129,7 +128,7 @@ class _HistoryJobScreenState extends State<HistoryJobScreen> {
           final history = _historyList[index];
           return ListTile(
             title: Text(history.tujuan),
-            subtitle: Text('Jam: ${history.jam}\nKet: ${history.keterangan}'),
+            subtitle: Text('Tanggal: ${history.tanggal}\nJam: ${history.jam}\nKet: ${history.keterangan}'),
             isThreeLine: true,
             onTap: () {
               Navigator.push(

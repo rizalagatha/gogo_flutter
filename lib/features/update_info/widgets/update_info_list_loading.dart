@@ -1,10 +1,10 @@
-// lib/features/kegiatan/widgets/checkout_list_loading.dart
+// lib/features/update_info/widgets/update_info_list_loading.dart
 
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
-class CheckoutListLoading extends StatelessWidget {
-  const CheckoutListLoading({super.key});
+class UpdateInfoListLoading extends StatelessWidget {
+  const UpdateInfoListLoading({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +13,7 @@ class CheckoutListLoading extends StatelessWidget {
       highlightColor: Colors.grey[100]!,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
-        itemCount: 6,
+        itemCount: 6, // Jumlah item skeleton yang ditampilkan
         itemBuilder: (context, index) {
           return Card(
             elevation: 2,
@@ -22,7 +22,7 @@ class CheckoutListLoading extends StatelessWidget {
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               title: Container(
-                width: 150,
+                width: double.infinity,
                 height: 18.0,
                 color: Colors.white,
               ),
@@ -38,7 +38,7 @@ class CheckoutListLoading extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Container(
-                      width: 200,
+                      width: 150,
                       height: 14.0,
                       color: Colors.white,
                     ),

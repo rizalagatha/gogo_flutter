@@ -9,7 +9,7 @@ import '../../../core/widgets/empty_state_widget.dart';
 import '../../../data/models/daftar_job_model.dart';
 import 'daftar_job_detail_screen.dart';
 import '../widgets/job_list_loading.dart';
-import '../../../../config.dart'; 
+import '../../../../config.dart';
 
 class DaftarJobBatalScreen extends StatefulWidget {
   const DaftarJobBatalScreen({super.key});
@@ -48,18 +48,20 @@ class _DaftarJobBatalScreenState extends State<DaftarJobBatalScreen> {
       final response = await http
           .get(Uri.parse('${Config.baseUrl}/jobs/batal'))
           .timeout(const Duration(seconds: 10));
-          
+
       if (mounted) {
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
           if (data['success'] == true) {
             List<dynamic> jobJson = data['data'];
             setState(() {
-              _jobList = jobJson.map((json) => DaftarJob.fromJson(json)).toList();
+              _jobList =
+                  jobJson.map((json) => DaftarJob.fromJson(json)).toList();
               _filteredList = _jobList;
             });
           } else {
-             setState(() => _errorMessage = data['message'] ?? 'Gagal memuat data');
+            setState(
+                () => _errorMessage = data['message'] ?? 'Gagal memuat data');
           }
         }
       }
@@ -79,8 +81,10 @@ class _DaftarJobBatalScreenState extends State<DaftarJobBatalScreen> {
     setState(() {
       _filteredList = _jobList.where((job) {
         return job.nomor.toLowerCase().contains(query) ||
-               job.customer.toLowerCase().contains(query) ||
-               job.uraian.toLowerCase().contains(query);
+            job.customer.toLowerCase().contains(query) ||
+            job.uraian.toLowerCase().contains(query) ||
+            job.userPeminta.toLowerCase().contains(query) ||
+            job.driver?.toLowerCase().contains(query) == true;
       }).toList();
     });
   }
@@ -119,7 +123,8 @@ class _DaftarJobBatalScreenState extends State<DaftarJobBatalScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             elevation: 2,
             shadowColor: Colors.black.withOpacity(0.1),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             child: InkWell(
               borderRadius: BorderRadius.circular(10),
               onTap: () {
@@ -138,27 +143,40 @@ class _DaftarJobBatalScreenState extends State<DaftarJobBatalScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(job.nomor, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text(job.nomor,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16)),
                         Chip(
                           label: Text(
                             job.status,
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12),
                           ),
                           backgroundColor: Colors.red.shade400,
                           padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          labelPadding: const EdgeInsets.symmetric(horizontal: 2),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          labelPadding:
+                              const EdgeInsets.symmetric(horizontal: 2),
                         ),
                       ],
                     ),
                     const Divider(height: 16),
-                    _buildInfoRow(Icons.business_outlined, 'Customer', job.customer),
-                    _buildInfoRow(Icons.description_outlined, 'Uraian', job.uraian),
+                    _buildInfoRow(
+                        Icons.business_outlined, 'Customer', job.customer),
+                    _buildInfoRow(
+                        Icons.description_outlined, 'Uraian', job.uraian),
                     _buildInfoRow(Icons.flag_outlined, 'Tipe', job.tipeJadwal),
-                    _buildInfoRow(Icons.person_outline, 'Peminta', job.userPeminta),
-                    _buildInfoRow(Icons.directions_car_outlined, 'Driver', job.driver ?? '-'),
-                    _buildInfoRow(Icons.calendar_today_outlined, 'Tgl Kerja', job.tglKerja),
-                    _buildInfoRow(Icons.access_time_outlined, 'Jam Kerja', job.jamKerja),
+                    _buildInfoRow(
+                        Icons.person_outline, 'Peminta', job.userPeminta),
+                    _buildInfoRow(Icons.directions_car_outlined, 'Driver',
+                        job.driver ?? '-'),
+                    _buildInfoRow(Icons.calendar_today_outlined, 'Tgl Kerja',
+                        job.tglKerja),
+                    _buildInfoRow(
+                        Icons.access_time_outlined, 'Jam Kerja', job.jamKerja),
                   ],
                 ),
               ),
@@ -178,7 +196,9 @@ class _DaftarJobBatalScreenState extends State<DaftarJobBatalScreen> {
           Icon(icon, size: 16, color: Colors.grey[600]),
           const SizedBox(width: 8),
           Text('$label: ', style: TextStyle(color: Colors.grey[600])),
-          Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500))),
+          Expanded(
+              child: Text(value,
+                  style: const TextStyle(fontWeight: FontWeight.w500))),
         ],
       ),
     );
@@ -197,7 +217,8 @@ class _DaftarJobBatalScreenState extends State<DaftarJobBatalScreen> {
               decoration: InputDecoration(
                 hintText: 'Cari job batal...',
                 prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ),

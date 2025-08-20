@@ -50,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _loadInitialData() async {
     await _getAppVersion();
-    await _checkServerVersion();
+    // await _checkServerVersion();
     await _loadSavedCredentials();
   }
 
@@ -63,29 +63,44 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _checkServerVersion() async {
-    try {
-      final response = await http.get(Uri.parse('${Config.baseUrl}/app-version'));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final serverVersion = data['version'];
-        if (mounted && _appVersion.isNotEmpty && serverVersion != _appVersion) {
-          _showUpdateDialog(serverVersion);
-        }
-      }
-    } catch (e) {
-      print('Gagal memeriksa versi: $e');
-    }
-  }
+  // Future<void> _checkServerVersion() async {
+  //   try {
+  //     final response = await http.get(Uri.parse('${Config.baseUrl}/app-version'));
+  //     if (response.statusCode == 200) {
+  //       final data = json.decode(response.body);
+  //       final serverVersion = data['version'];
+  //       if (mounted && _appVersion.isNotEmpty && serverVersion != _appVersion) {
+  //         _showUpdateDialog(serverVersion);
+  //       }
+  //     }
+  //   } catch (e) {
+  //     print('Gagal memeriksa versi: $e');
+  //   }
+  // }
 
   Future<void> _loadSavedCredentials() async {
     final prefs = await SharedPreferences.getInstance();
     final savedKode = prefs.getString('saved_kode');
     if (savedKode != null && savedKode.isNotEmpty) {
-      setState(() {
-        _kodeController.text = savedKode;
-        _savePassword = true;
-      });
+      try {
+        final response = await http.get(Uri.parse('${Config.baseUrl}/auth/credentials?kode=$savedKode'));
+        if (mounted && response.statusCode == 200) {
+          final data = json.decode(response.body);
+          if (data['success'] == true) {
+            setState(() {
+              _kodeController.text = savedKode;
+              _passwordController.text = data['password']; // Mengisi password
+              _savePassword = true;
+            });
+          }
+        }
+      } catch (e) {
+        print("Gagal mengambil password tersimpan: $e");
+        // Jika gagal, setidaknya isi username
+        setState(() {
+          _kodeController.text = savedKode;
+        });
+      }
     }
   }
 
