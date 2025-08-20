@@ -212,12 +212,12 @@ class _KegiatanDetailScreenState extends State<KegiatanDetailScreen> {
         children: [
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text('Daftar Kunjungan:',
+            child: Text('Update Info:',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           ),
           Expanded(
             child: _subDetails.isEmpty
-                ? const Center(child: Text('Belum ada kunjungan.'))
+                ? const Center(child: Text('Belum ada update.'))
                 : ListView.builder(
                     itemCount: _subDetails.length,
                     itemBuilder: (context, index) {
