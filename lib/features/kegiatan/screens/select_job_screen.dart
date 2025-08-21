@@ -92,17 +92,69 @@ class _SelectJobScreenState extends State<SelectJobScreen> {
     }
 
     return ListView.builder(
+      padding: const EdgeInsets.all(8.0),
       itemCount: _jobList.length,
       itemBuilder: (context, index) {
         final job = _jobList[index];
-        return ListTile(
-          title: Text(job.nomor),
-          subtitle: Text('${job.customer} => ${job.uraian}'),
-          onTap: () {
-            Navigator.of(context).pop(job);
-          },
+        return Card(
+          elevation: 2,
+          margin: const EdgeInsets.only(bottom: 12.0),
+          child: InkWell(
+            onTap: () {
+              Navigator.of(context).pop(job);
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildInfoRow('Nomor', job.nomor, isTitle: true),
+                  const Divider(),
+                  _buildInfoRow('Peminta', job.peminta),
+                  _buildInfoRow('Pengambilan', job.pengambilan ?? '-'),
+                  _buildInfoRow('Customer', job.customer),
+                  _buildInfoRow('PIC', job.pic ?? '-'),
+                  _buildInfoRow('Uraian', job.uraian),
+                  _buildInfoRow('Tipe', '${job.tipeJadwal} | Jam: ${job.jamKerja} | Tgl: ${job.tglKerja}'),
+                  _buildInfoRow('Status', job.status),
+                  _buildInfoRow('Driver', job.driver ?? '-'),
+                ],
+              ),
+            ),
+          ),
         );
       },
+    );
+  }
+
+  // Widget helper untuk membuat baris info yang rapi
+  Widget _buildInfoRow(String label, String value, {bool isTitle = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 90, // Lebar tetap untuk label
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: isTitle ? FontWeight.bold : FontWeight.normal,
+                color: isTitle ? null : Colors.grey[600],
+              ),
+            ),
+          ),
+          const Text(': '),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontWeight: isTitle ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

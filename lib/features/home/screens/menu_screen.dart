@@ -123,8 +123,8 @@ class _MenuScreenState extends State<MenuScreen> {
 
     if (result == 'checkout') {
       try {
-        final response = await http.get(
-            Uri.parse('${Config.baseUrl}/kegiatan/check-open?user_kode=${widget.user.kode}'));
+        final response = await http.get(Uri.parse(
+            '${Config.baseUrl}/kegiatan/check-open?user_kode=${widget.user.kode}'));
 
         if (!mounted) return;
 
@@ -158,7 +158,8 @@ class _MenuScreenState extends State<MenuScreen> {
 
   Future<void> _getAppVersion() async {
     try {
-      final response = await http.get(Uri.parse('${Config.baseUrl}/app-version'));
+      final response =
+          await http.get(Uri.parse('${Config.baseUrl}/app-version'));
 
       if (!mounted) return;
 
@@ -179,7 +180,7 @@ class _MenuScreenState extends State<MenuScreen> {
     }
   }
 
-  @override
+@override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
@@ -270,110 +271,120 @@ class _MenuScreenState extends State<MenuScreen> {
         if (didPop) return;
       },
       child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          title: Image.asset(
-            'assets/logo_kencana.png',
-            width: 100,
-            height: 100,
-          ),
-          actions: [
-            IconButton(
-              tooltip: 'Ganti Tema',
-              icon: Icon(
-                themeProvider.themeMode == ThemeMode.dark
-                    ? Icons.light_mode_outlined
-                    : Icons.dark_mode_outlined,
-              ),
-              onPressed: () {
-                final isDarkMode = themeProvider.themeMode == ThemeMode.dark;
-                themeProvider.toggleTheme(!isDarkMode);
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () =>
-                  Navigator.of(context).pushReplacementNamed('/login'),
-            ),
-          ],
-        ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 24.0, top: 8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AutoSizeText(
-                      'Selamat Datang,',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant),
-                      maxLines: 1,
-                      minFontSize: 14,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // [PERBAIKAN] Expanded akan menjadi ruang kosong di atas
+                Expanded(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 24.0, top: 16.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min, // Agar Column tidak meregang
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          AutoSizeText(
+                            'Selamat Datang,',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color:
+                                    Theme.of(context).colorScheme.onSurfaceVariant),
+                            maxLines: 1,
+                            minFontSize: 14,
+                          ),
+                          AutoSizeText(
+                            widget.user.nama,
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                            maxLines: 1,
+                            minFontSize: 18,
+                          ),
+                        ],
+                      ),
                     ),
-                    AutoSizeText(
-                      widget.user.nama,
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                      maxLines: 1,
-                      minFontSize: 18,
-                    ),
-                  ],
-                ),
-              ),
-
-              // ====== GRID MENU (GridView.builder) ======
-              AnimationLimiter(
-                child: GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 24),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 0.9,
                   ),
-                  itemCount: menuItemsData.length,
-                  itemBuilder: (context, index) {
-                    return AnimationConfiguration.staggeredGrid(
-                      position: index,
-                      duration: const Duration(milliseconds: 500),
-                      columnCount: 3,
-                      child: SlideAnimation(
-                        verticalOffset: 50.0,
-                        child: FadeInAnimation(
-                          child: _buildGridMenuItem(
-                            icon: menuItemsData[index]['icon'] as IconData,
-                            title: menuItemsData[index]['title'] as String,
-                            onTap:
-                                menuItemsData[index]['onTap'] as VoidCallback,
-                            color: cardColors[index % cardColors.length],
+                ),
+
+                // Grid Menu sekarang berada di bawah
+                AnimationLimiter(
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.only(bottom: 24),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.9,
+                    ),
+                    itemCount: menuItemsData.length,
+                    itemBuilder: (context, index) {
+                      return AnimationConfiguration.staggeredGrid(
+                        position: index,
+                        duration: const Duration(milliseconds: 500),
+                        columnCount: 3,
+                        child: SlideAnimation(
+                          verticalOffset: 50.0,
+                          child: FadeInAnimation(
+                            child: _buildGridMenuItem(
+                              icon: menuItemsData[index]['icon'] as IconData,
+                              title: menuItemsData[index]['title'] as String,
+                              onTap:
+                                  menuItemsData[index]['onTap'] as VoidCallback,
+                              color: cardColors[index % cardColors.length],
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24.0),
-                child: Center(
-                  child: Text(
-                    'Ver $_appVersion',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      );
+                    },
                   ),
                 ),
-              ),
-            ],
+                
+                // Bagian ini akan selalu menempel di bawah
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Image.asset(
+                        'assets/logo_kencana.png',
+                        width: 80,
+                        height: 80,
+                      ),
+                      Text(
+                        'Ver $_appVersion',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      ),
+                      Row(
+                        children: [
+                          IconButton(
+                            tooltip: 'Ganti Tema',
+                            icon: Icon(
+                              themeProvider.themeMode == ThemeMode.dark
+                                  ? Icons.light_mode_outlined
+                                  : Icons.dark_mode_outlined,
+                            ),
+                            onPressed: () {
+                              final isDarkMode = themeProvider.themeMode == ThemeMode.dark;
+                              themeProvider.toggleTheme(!isDarkMode);
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.logout),
+                            onPressed: () =>
+                                Navigator.of(context).pushReplacementNamed('/login'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
