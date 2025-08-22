@@ -55,6 +55,8 @@ class _DaftarJobDetailScreenState extends State<DaftarJobDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(title: Text('Detail Job: ${widget.job.nomor}')),
       body: Column(
@@ -72,7 +74,10 @@ class _DaftarJobDetailScreenState extends State<DaftarJobDetailScreen> {
                 const SizedBox(height: 8),
                 const Divider(),
                 const SizedBox(height: 8),
-                const Text('Detail SPK:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text(
+                  'Detail SPK:', 
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)
+                ),
               ],
             ),
           ),
@@ -91,7 +96,11 @@ class _DaftarJobDetailScreenState extends State<DaftarJobDetailScreen> {
                             margin: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 4),
                             child: ListTile(
-                              leading: CircleAvatar(child: Text('${detail.noUrut}')),
+                              leading: CircleAvatar(
+                                backgroundColor: theme.colorScheme.primary,
+                                foregroundColor: theme.colorScheme.onPrimary,
+                                child: Text('${detail.noUrut}')
+                              ),
                               title: Text('SPK: ${detail.spk}'),
                               subtitle: Text(
                                 'Ket: ${detail.keterangan}\n'
@@ -109,11 +118,14 @@ class _DaftarJobDetailScreenState extends State<DaftarJobDetailScreen> {
   }
   
   Widget _buildHeaderInfo(String label, String value) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: RichText(
         text: TextSpan(
-          style: DefaultTextStyle.of(context).style.copyWith(fontSize: 15),
+          // Gunakan bodyMedium sebagai gaya dasar yang akan beradaptasi
+          style: textTheme.bodyMedium,
           children: <TextSpan>[
             TextSpan(text: '$label: ', style: const TextStyle(fontWeight: FontWeight.bold)),
             TextSpan(text: value),
