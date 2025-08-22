@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:provider/provider.dart';
+import 'package:permission_handler/permission_handler.dart'; 
 
 import 'package:gogo_flutter/main.dart';
 
@@ -31,55 +32,60 @@ class MenuScreen extends StatefulWidget {
 }
 
 class _MenuScreenState extends State<MenuScreen> {
-  Timer? _notificationTimer;
   String _appVersion = '...';
 
   @override
   void initState() {
     super.initState();
     _getAppVersion();
-    _fetchNotifications();
-    _startNotificationTimer();
+    // Panggil fungsi untuk meminta izin dan menampilkan notifikasi
+    _requestPermissionAndShowNotification();
   }
 
-  @override
-  void dispose() {
-    _notificationTimer?.cancel();
-    super.dispose();
+  Future<void> _requestPermissionAndShowNotification() async {
+    // Minta izin notifikasi
+    PermissionStatus status = await Permission.notification.request();
+
+    if (status.isGranted) {
+      _fetchNewJobNotifications();
+    } else {
+      debugPrint("Izin notifikasi ditolak.");
+    }
   }
 
-  void _startNotificationTimer() {
-    _notificationTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
-      _fetchNotifications();
-    });
-  }
+  // [PERBAIKAN] Fungsi ini sekarang mengambil jadwal baru, bukan menghitung job aktif
+  Future<void> _fetchNewJobNotifications() async {
+    if (!widget.user.isDriver) return;
 
-  Future<void> _fetchNotifications() async {
-    final userKode = widget.user.kode;
     try {
-      final response = await http.get(
-        Uri.parse('${Config.baseUrl}/notifications?user_kode=$userKode'),
-      );
+      // [PERBAIKAN] Menggunakan endpoint yang benar, sesuai logika Delphi
+      final url = Uri.parse('${Config.baseUrl}/notifications?user_kode=${widget.user.kode}');
+      final response = await http.get(url);
 
-      if (!mounted) return;
-
-      if (response.statusCode == 200) {
+      if (mounted && response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['success'] == true) {
-          final List<dynamic> notifications = data['notifications'] ?? [];
+        if (data['success'] == true && data['notifications'] != null) {
+          final List<dynamic> notifications = data['notifications'];
+          
+          // Loop melalui setiap notifikasi baru dan tampilkan
           for (var i = 0; i < notifications.length; i++) {
             final notif = notifications[i];
-            notificationService.showNotification(
-              i,
-              notif['title'] ?? 'Info',
-              notif['body'] ?? '-',
-            );
+            final title = notif['title'] ?? 'Info Jadwal';
+            final body = notif['body'] ?? 'Anda memiliki jadwal baru.';
+            
+            // Tampilkan notifikasi dengan ID unik (menggunakan index)
+            notificationService.showNotification(i, title, body);
           }
         }
       }
     } catch (e) {
-      debugPrint('Gagal mengambil notifikasi: $e');
+      debugPrint('Gagal memeriksa notifikasi jadwal baru: $e');
     }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   void _showCheckInOutDialog() async {
@@ -123,8 +129,8 @@ class _MenuScreenState extends State<MenuScreen> {
 
     if (result == 'checkout') {
       try {
-        final response = await http.get(Uri.parse(
-            '${Config.baseUrl}/kegiatan/check-open?user_kode=${widget.user.kode}'));
+        final response = await http.get(
+            Uri.parse('${Config.baseUrl}/kegiatan/check-open?user_kode=${widget.user.kode}'));
 
         if (!mounted) return;
 
@@ -158,8 +164,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
   Future<void> _getAppVersion() async {
     try {
-      final response =
-          await http.get(Uri.parse('${Config.baseUrl}/app-version'));
+      final response = await http.get(Uri.parse('${Config.baseUrl}/app-version'));
 
       if (!mounted) return;
 
@@ -180,7 +185,7 @@ class _MenuScreenState extends State<MenuScreen> {
     }
   }
 
-@override
+  @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
@@ -277,13 +282,12 @@ class _MenuScreenState extends State<MenuScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // [PERBAIKAN] Expanded akan menjadi ruang kosong di atas
                 Expanded(
                   child: Center(
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 24.0, top: 16.0),
                       child: Column(
-                        mainAxisSize: MainAxisSize.min, // Agar Column tidak meregang
+                        mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           AutoSizeText(
@@ -309,7 +313,6 @@ class _MenuScreenState extends State<MenuScreen> {
                   ),
                 ),
 
-                // Grid Menu sekarang berada di bawah
                 AnimationLimiter(
                   child: GridView.builder(
                     shrinkWrap: true,
@@ -344,7 +347,6 @@ class _MenuScreenState extends State<MenuScreen> {
                   ),
                 ),
                 
-                // Bagian ini akan selalu menempel di bawah
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: Row(
