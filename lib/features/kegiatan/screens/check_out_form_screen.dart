@@ -34,12 +34,21 @@ class _CheckOutFormScreenState extends State<CheckOutFormScreen> {
   List<String> _standbyOptions = [];
   final _keteranganController = TextEditingController();
   final _statusController = TextEditingController();
+  final _penerimaController = TextEditingController(); // <-- [BARU] Controller untuk Penerima
   File? _imageFile;
 
   @override
   void initState() {
     super.initState();
     _fetchFormData();
+  }
+  
+  @override
+  void dispose() {
+    _keteranganController.dispose();
+    _statusController.dispose();
+    _penerimaController.dispose(); // <-- [BARU] Jangan lupa dispose
+    super.dispose();
   }
 
   Future<void> _fetchFormData() async {
@@ -92,63 +101,59 @@ class _CheckOutFormScreenState extends State<CheckOutFormScreen> {
   }
 
   Future<void> _submitCheckout() async {
-  if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) return;
 
-  setState(() => _isSaving = true);
+    setState(() => _isSaving = true);
 
-  try {
-    // bikin URI ke endpoint checkout
-    final uri = Uri.parse('${Config.baseUrl}/kegiatan/checkout');
+    try {
+      final uri = Uri.parse('${Config.baseUrl}/kegiatan/checkout');
+      final request = http.MultipartRequest('POST', uri);
 
-    // ganti dari http.post ke MultipartRequest
-    final request = http.MultipartRequest('POST', uri);
+      // Tambahkan form fields
+      request.fields['kar_kode'] = widget.user.kode;
+      request.fields['nomor_minta'] = widget.job.nomor;
+      request.fields['keterangan'] = _keteranganController.text;
+      request.fields['standby'] = _selectedStandby ?? '';
+      request.fields['penerima'] = _penerimaController.text; // <-- [BARU] Kirim data penerima
 
-    // tambahin form fields
-    request.fields['kar_kode'] = widget.user.kode;
-    request.fields['nomor_minta'] = widget.job.nomor;
-    request.fields['keterangan'] = _keteranganController.text;
-    request.fields['standby'] = _selectedStandby ?? '';
-
-    // kalau ada foto, tambahin file
-    if (_imageFile != null) {
-      request.files.add(
-        await http.MultipartFile.fromPath('foto', _imageFile!.path),
-      );
-    }
-
-    // kirim request
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
-
-    if (mounted) {
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true) {
-          Navigator.of(context).popUntil((route) => route.isFirst);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Check Out berhasil!')),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Gagal: ${data['message']}')),
-          );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Server error: ${response.statusCode}')),
+      if (_imageFile != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath('foto', _imageFile!.path),
         );
       }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (mounted) {
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          if (data['success'] == true) {
+            Navigator.of(context).popUntil((route) => route.isFirst);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Check Out berhasil!')),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Gagal: ${data['message']}')),
+            );
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Server error: ${response.statusCode}')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-    }
-  } finally {
-    if (mounted) setState(() => _isSaving = false);
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -193,6 +198,16 @@ class _CheckOutFormScreenState extends State<CheckOutFormScreen> {
                     validator: (v) => v == null ? 'Pilih lokasi standby' : null,
                   ),
                   const SizedBox(height: 16),
+                  
+                  // <-- [BARU] TextFormField untuk Penerima
+                  TextFormField(
+                    controller: _penerimaController,
+                    decoration: const InputDecoration(
+                        labelText: 'Penerima', border: OutlineInputBorder()),
+                    validator: (v) => v!.isEmpty ? 'Nama penerima tidak boleh kosong' : null,
+                  ),
+                  const SizedBox(height: 16),
+
                   TextFormField(
                     controller: _keteranganController,
                     decoration: const InputDecoration(
