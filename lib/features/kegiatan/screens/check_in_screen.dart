@@ -8,8 +8,8 @@ import '../../../data/models/user_model.dart';
 import 'select_job_screen.dart';
 import '../../../data/models/selectable_job_model.dart';
 import 'select_kendaraan_screen.dart';
-import 'select_driver_screen.dart'; // <-- Import baru
-import '../../../data/models/selectable_driver_model.dart'; // <-- Import baru
+import 'select_driver_screen.dart'; 
+import '../../../data/models/selectable_driver_model.dart'; 
 import '../../../../config.dart'; 
 
 class CheckInScreen extends StatefulWidget {
@@ -30,11 +30,11 @@ class _CheckInScreenState extends State<CheckInScreen> {
   final _customerController = TextEditingController();
   final _uraianController = TextEditingController();
   final _statusController = TextEditingController();
-  final _driverController = TextEditingController(); // <-- Controller baru
+  final _driverController = TextEditingController(); 
 
   // State
   String? _selectedJadwal;
-  SelectableDriver? _selectedDriver; // <-- State baru untuk driver terpilih
+  SelectableDriver? _selectedDriver; 
 
   @override
   void initState() {
