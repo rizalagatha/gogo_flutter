@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb; // <-- Import untuk deteksi web
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:provider/provider.dart';
-import 'package:permission_handler/permission_handler.dart'; 
 
 import 'package:gogo_flutter/main.dart';
 
@@ -32,60 +32,55 @@ class MenuScreen extends StatefulWidget {
 }
 
 class _MenuScreenState extends State<MenuScreen> {
+  Timer? _notificationTimer;
   String _appVersion = '...';
 
   @override
   void initState() {
     super.initState();
     _getAppVersion();
-    // Panggil fungsi untuk meminta izin dan menampilkan notifikasi
-    _requestPermissionAndShowNotification();
-  }
-
-  Future<void> _requestPermissionAndShowNotification() async {
-    // Minta izin notifikasi
-    PermissionStatus status = await Permission.notification.request();
-
-    if (status.isGranted) {
-      _fetchNewJobNotifications();
-    } else {
-      debugPrint("Izin notifikasi ditolak.");
-    }
-  }
-
-  // [PERBAIKAN] Fungsi ini sekarang mengambil jadwal baru, bukan menghitung job aktif
-  Future<void> _fetchNewJobNotifications() async {
-    if (!widget.user.isDriver) return;
-
-    try {
-      // [PERBAIKAN] Menggunakan endpoint yang benar, sesuai logika Delphi
-      final url = Uri.parse('${Config.baseUrl}/notifications?user_kode=${widget.user.kode}');
-      final response = await http.get(url);
-
-      if (mounted && response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true && data['notifications'] != null) {
-          final List<dynamic> notifications = data['notifications'];
-          
-          // Loop melalui setiap notifikasi baru dan tampilkan
-          for (var i = 0; i < notifications.length; i++) {
-            final notif = notifications[i];
-            final title = notif['title'] ?? 'Info Jadwal';
-            final body = notif['body'] ?? 'Anda memiliki jadwal baru.';
-            
-            // Tampilkan notifikasi dengan ID unik (menggunakan index)
-            notificationService.showNotification(i, title, body);
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('Gagal memeriksa notifikasi jadwal baru: $e');
-    }
+    _fetchNotifications();
+    _startNotificationTimer();
   }
 
   @override
   void dispose() {
+    _notificationTimer?.cancel();
     super.dispose();
+  }
+
+  void _startNotificationTimer() {
+    _notificationTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      _fetchNotifications();
+    });
+  }
+
+  Future<void> _fetchNotifications() async {
+    final userKode = widget.user.kode;
+    try {
+      final response = await http.get(
+        Uri.parse('${Config.baseUrl}/notifications?user_kode=$userKode'),
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          final List<dynamic> notifications = data['notifications'] ?? [];
+          for (var i = 0; i < notifications.length; i++) {
+            final notif = notifications[i];
+            notificationService.showNotification(
+              i,
+              notif['title'] ?? 'Info',
+              notif['body'] ?? '-',
+            );
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Gagal mengambil notifikasi: $e');
+    }
   }
 
   void _showCheckInOutDialog() async {
@@ -279,121 +274,184 @@ class _MenuScreenState extends State<MenuScreen> {
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 24.0, top: 16.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          AutoSizeText(
-                            'Selamat Datang,',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color:
-                                    Theme.of(context).colorScheme.onSurfaceVariant),
-                            maxLines: 1,
-                            minFontSize: 14,
-                          ),
-                          AutoSizeText(
-                            widget.user.nama,
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                            maxLines: 1,
-                            minFontSize: 18,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                AnimationLimiter(
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: const EdgeInsets.only(bottom: 24),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.9,
-                    ),
-                    itemCount: menuItemsData.length,
-                    itemBuilder: (context, index) {
-                      return AnimationConfiguration.staggeredGrid(
-                        position: index,
-                        duration: const Duration(milliseconds: 500),
-                        columnCount: 3,
-                        child: SlideAnimation(
-                          verticalOffset: 50.0,
-                          child: FadeInAnimation(
-                            child: _buildGridMenuItem(
-                              icon: menuItemsData[index]['icon'] as IconData,
-                              title: menuItemsData[index]['title'] as String,
-                              onTap:
-                                  menuItemsData[index]['onTap'] as VoidCallback,
-                              color: cardColors[index % cardColors.length],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Image.asset(
-                        'assets/logo_kencana.png',
-                        width: 80,
-                        height: 80,
-                      ),
-                      Text(
-                        'Ver $_appVersion',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                      ),
-                      Row(
-                        children: [
-                          IconButton(
-                            tooltip: 'Ganti Tema',
-                            icon: Icon(
-                              themeProvider.themeMode == ThemeMode.dark
-                                  ? Icons.light_mode_outlined
-                                  : Icons.dark_mode_outlined,
-                            ),
-                            onPressed: () {
-                              final isDarkMode = themeProvider.themeMode == ThemeMode.dark;
-                              themeProvider.toggleTheme(!isDarkMode);
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.logout),
-                            onPressed: () =>
-                                Navigator.of(context).pushReplacementNamed('/login'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            // [PERBAIKAN] Gunakan kIsWeb untuk memilih layout yang sesuai
+            child: kIsWeb 
+              ? _buildWebLayout(themeProvider, menuItemsData) 
+              : _buildMobileLayout(themeProvider, menuItemsData, cardColors),
           ),
         ),
       ),
     );
   }
 
-  // Widget helper
+  // [BARU] Widget untuk layout Web (ListView)
+  Widget _buildWebLayout(ThemeProvider themeProvider, List<Map<String, dynamic>> menuItemsData) {
+    return Column(
+      children: [
+        Expanded(
+          child: ListView(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 24.0, top: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AutoSizeText(
+                      'Selamat Datang,',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      maxLines: 1,
+                      minFontSize: 14,
+                    ),
+                    AutoSizeText(
+                      widget.user.nama,
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                      maxLines: 1,
+                      minFontSize: 18,
+                    ),
+                  ],
+                ),
+              ),
+              // Menu item ditampilkan sebagai list vertikal
+              ...menuItemsData.map((item) {
+                return Card(
+                  margin: const EdgeInsets.symmetric(vertical: 4),
+                  child: ListTile(
+                    leading: Icon(item['icon'] as IconData),
+                    title: Text(item['title'] as String),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: item['onTap'] as VoidCallback,
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+        ),
+        _buildBottomBar(themeProvider), // Panggil bottom bar
+      ],
+    );
+  }
+
+  // [BARU] Widget untuk layout Mobile (Grid/Wrap)
+  Widget _buildMobileLayout(ThemeProvider themeProvider, List<Map<String, dynamic>> menuItemsData, List<Color> cardColors) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 24.0, top: 16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  AutoSizeText(
+                    'Selamat Datang,',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    maxLines: 1,
+                    minFontSize: 14,
+                  ),
+                  AutoSizeText(
+                    widget.user.nama,
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineSmall
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                    maxLines: 1,
+                    minFontSize: 18,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        AnimationLimiter(
+          child: Wrap(
+            spacing: 12.0,
+            runSpacing: 12.0,
+            children: List.generate(menuItemsData.length, (index) {
+              double screenWidth = MediaQuery.of(context).size.width;
+              double sidePadding = 16.0 * 2;
+              double totalSpacing = 12.0 * 2;
+              double itemWidth = (screenWidth - sidePadding - totalSpacing) / 3;
+              double itemHeight = itemWidth / 0.9;
+
+              return AnimationConfiguration.staggeredGrid(
+                position: index,
+                duration: const Duration(milliseconds: 500),
+                columnCount: 3,
+                child: SlideAnimation(
+                  verticalOffset: 50.0,
+                  child: FadeInAnimation(
+                    child: SizedBox(
+                      width: itemWidth,
+                      height: itemHeight,
+                      child: _buildGridMenuItem(
+                        icon: menuItemsData[index]['icon'] as IconData,
+                        title: menuItemsData[index]['title'] as String,
+                        onTap:
+                            menuItemsData[index]['onTap'] as VoidCallback,
+                        color: cardColors[index % cardColors.length],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+        _buildBottomBar(themeProvider), // Panggil bottom bar
+      ],
+    );
+  }
+
+  // [BARU] Widget untuk baris bawah agar tidak duplikasi kode
+  Widget _buildBottomBar(ThemeProvider themeProvider) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24.0, bottom: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Image.asset(
+            'assets/logo_kencana.png',
+            width: 80,
+            height: 80,
+          ),
+          Text(
+            'Ver $_appVersion',
+            style: TextStyle(color: Colors.grey[600], fontSize: 12),
+          ),
+          Row(
+            children: [
+              IconButton(
+                tooltip: 'Ganti Tema',
+                icon: Icon(
+                  themeProvider.themeMode == ThemeMode.dark
+                      ? Icons.light_mode_outlined
+                      : Icons.dark_mode_outlined,
+                ),
+                onPressed: () {
+                  final isDarkMode = themeProvider.themeMode == ThemeMode.dark;
+                  themeProvider.toggleTheme(!isDarkMode);
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.logout),
+                onPressed: () =>
+                    Navigator.of(context).pushReplacementNamed('/login'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget helper untuk item Grid
   Widget _buildGridMenuItem({
     required IconData icon,
     required String title,
@@ -415,13 +473,18 @@ class _MenuScreenState extends State<MenuScreen> {
           children: [
             Icon(icon, size: 32, color: textColor),
             const SizedBox(height: 12),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-                color: textColor,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: textColor,
+                ),
               ),
             ),
           ],
