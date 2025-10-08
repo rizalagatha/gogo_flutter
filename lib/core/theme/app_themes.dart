@@ -1,6 +1,11 @@
 // lib/core/theme/app_themes.dart
 
+// ignore: unnecessary_import
 import 'package:flutter/material.dart';
+
+// Gunakan typedef yang sesuai versi Flutter baru
+typedef AppCardTheme = CardThemeData;
+
 import 'package:google_fonts/google_fonts.dart';
 
 class AppThemes {
