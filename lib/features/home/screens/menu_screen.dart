@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb; // <-- Import untuk deteksi web
+import 'package:flutter/foundation.dart'
+    show kIsWeb; // <-- Import untuk deteksi web
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:auto_size_text/auto_size_text.dart';
@@ -21,6 +22,7 @@ import '../../update_info/screens/update_info_list_screen.dart';
 import '../../../core/providers/theme_provider.dart';
 import '../../job/screens/daftar_job_batal_screen.dart';
 import '../../../../config.dart';
+import '../../auth/screens/change_password_dialog.dart';
 
 class MenuScreen extends StatefulWidget {
   final User user;
@@ -125,7 +127,10 @@ class _MenuScreenState extends State<MenuScreen> {
     if (result == 'checkout') {
       try {
         final response = await http.get(
-            Uri.parse('${Config.baseUrl}/kegiatan/check-open?user_kode=${widget.user.kode}'));
+          Uri.parse(
+            '${Config.baseUrl}/kegiatan/check-open?user_kode=${widget.user.kode}',
+          ),
+        );
 
         if (!mounted) return;
 
@@ -143,23 +148,26 @@ class _MenuScreenState extends State<MenuScreen> {
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                    content: Text('Tidak ada yang harus di-check out')),
+                  content: Text('Tidak ada yang harus di-check out'),
+                ),
               );
             }
           }
         }
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
 
   Future<void> _getAppVersion() async {
     try {
-      final response = await http.get(Uri.parse('${Config.baseUrl}/app-version'));
+      final response = await http.get(
+        Uri.parse('${Config.baseUrl}/app-version'),
+      );
 
       if (!mounted) return;
 
@@ -233,7 +241,8 @@ class _MenuScreenState extends State<MenuScreen> {
         'onTap': () => Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (context) => const DaftarKendaraanScreen()),
+                builder: (context) => const DaftarKendaraanScreen(),
+              ),
             ),
       },
       {
@@ -275,9 +284,9 @@ class _MenuScreenState extends State<MenuScreen> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             // [PERBAIKAN] Gunakan kIsWeb untuk memilih layout yang sesuai
-            child: kIsWeb 
-              ? _buildWebLayout(themeProvider, menuItemsData) 
-              : _buildMobileLayout(themeProvider, menuItemsData, cardColors),
+            child: kIsWeb
+                ? _buildWebLayout(themeProvider, menuItemsData)
+                : _buildMobileLayout(themeProvider, menuItemsData, cardColors),
           ),
         ),
       ),
@@ -285,7 +294,10 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   // [BARU] Widget untuk layout Web (ListView)
-  Widget _buildWebLayout(ThemeProvider themeProvider, List<Map<String, dynamic>> menuItemsData) {
+  Widget _buildWebLayout(
+    ThemeProvider themeProvider,
+    List<Map<String, dynamic>> menuItemsData,
+  ) {
     return Column(
       children: [
         Expanded(
@@ -299,7 +311,9 @@ class _MenuScreenState extends State<MenuScreen> {
                     AutoSizeText(
                       'Selamat Datang,',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                       maxLines: 1,
                       minFontSize: 14,
                     ),
@@ -336,7 +350,11 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   // [BARU] Widget untuk layout Mobile (Grid/Wrap)
-  Widget _buildMobileLayout(ThemeProvider themeProvider, List<Map<String, dynamic>> menuItemsData, List<Color> cardColors) {
+  Widget _buildMobileLayout(
+    ThemeProvider themeProvider,
+    List<Map<String, dynamic>> menuItemsData,
+    List<Color> cardColors,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -351,16 +369,16 @@ class _MenuScreenState extends State<MenuScreen> {
                   AutoSizeText(
                     'Selamat Datang,',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                     maxLines: 1,
                     minFontSize: 14,
                   ),
                   AutoSizeText(
                     widget.user.nama,
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineSmall
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                     maxLines: 1,
                     minFontSize: 18,
                   ),
@@ -393,8 +411,7 @@ class _MenuScreenState extends State<MenuScreen> {
                       child: _buildGridMenuItem(
                         icon: menuItemsData[index]['icon'] as IconData,
                         title: menuItemsData[index]['title'] as String,
-                        onTap:
-                            menuItemsData[index]['onTap'] as VoidCallback,
+                        onTap: menuItemsData[index]['onTap'] as VoidCallback,
                         color: cardColors[index % cardColors.length],
                       ),
                     ),
@@ -416,11 +433,7 @@ class _MenuScreenState extends State<MenuScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Image.asset(
-            'assets/logo_kencana.png',
-            width: 80,
-            height: 80,
-          ),
+          Image.asset('assets/logo_kencana.png', width: 80, height: 80),
           Text(
             'Ver $_appVersion',
             style: TextStyle(color: Colors.grey[600], fontSize: 12),
@@ -438,6 +451,12 @@ class _MenuScreenState extends State<MenuScreen> {
                   final isDarkMode = themeProvider.themeMode == ThemeMode.dark;
                   themeProvider.toggleTheme(!isDarkMode);
                 },
+              ),
+              IconButton(
+                tooltip: 'Ganti Password',
+                icon: const Icon(Icons.lock_reset),
+                onPressed: () =>
+                    showChangePasswordDialog(context, user: widget.user),
               ),
               IconButton(
                 icon: const Icon(Icons.logout),

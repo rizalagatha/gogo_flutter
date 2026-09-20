@@ -171,19 +171,28 @@ class _CheckOutFormScreenState extends State<CheckOutFormScreen> {
                   _buildInfoText('Nomor Minta', widget.job.nomor),
                   _buildInfoText('Tujuan', _tujuan),
                   const Divider(height: 24),
-                  TextFormField(
-                    controller: _statusController,
-                    readOnly: true,
-                    decoration: InputDecoration(
-                      labelText: 'Status',
-                      border: const OutlineInputBorder(),
-                      filled: true,
-                      fillColor: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withOpacity(0.08),
-                    ),
-                  ),
+                 TextFormField(
+  controller: _keteranganController,
+  decoration: const InputDecoration(
+    labelText: 'Note', 
+    border: OutlineInputBorder(),
+    helperText: 'Maksimal 255 karakter', // Memberi info ke user
+  ),
+  maxLines: 4,
+  maxLength: 255, // Membatasi input secara fisik di keyboard
+  buildCounter: (context, {required currentLength, required isFocused, maxLength}) {
+    return Text(
+      '$currentLength / $maxLength',
+      style: TextStyle(color: currentLength > maxLength! ? Colors.red : Colors.grey),
+    );
+  },
+  validator: (v) {
+    if (v != null && v.length > 255) {
+      return 'Keterangan terlalu panjang';
+    }
+    return null;
+  },
+),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     value: _selectedStandby,

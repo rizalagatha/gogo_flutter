@@ -10,6 +10,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../../../config.dart';
 import '../../home/screens/menu_screen.dart';
 import '../../../data/models/user_model.dart';
+import 'change_password_dialog.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -83,7 +84,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final savedKode = prefs.getString('saved_kode');
     if (savedKode != null && savedKode.isNotEmpty) {
       try {
-        final response = await http.get(Uri.parse('${Config.baseUrl}/auth/credentials?kode=$savedKode'));
+        final response = await http.get(
+            Uri.parse('${Config.baseUrl}/auth/credentials?kode=$savedKode'));
         if (mounted && response.statusCode == 200) {
           final data = json.decode(response.body);
           if (data['success'] == true) {
@@ -115,7 +117,10 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final response = await http.post(
         Uri.parse('${Config.baseUrl}/auth/login'),
-        body: {'username': _kodeController.text, 'password': _passwordController.text},
+        body: {
+          'username': _kodeController.text,
+          'password': _passwordController.text
+        },
       );
 
       if (mounted) {
@@ -153,22 +158,22 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _showUpdateDialog(String newVersion) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Update Tersedia'),
-        content: Text('Versi baru ($newVersion) tersedia. Silahkan update aplikasi Anda.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
+  // void _showUpdateDialog(String newVersion) {
+  //   showDialog(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (context) => AlertDialog(
+  //       title: const Text('Update Tersedia'),
+  //       content: Text('Versi baru ($newVersion) tersedia. Silahkan update aplikasi Anda.'),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.of(context).pop(),
+  //           child: const Text('OK'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -177,7 +182,8 @@ class _LoginScreenState extends State<LoginScreen> {
         child: SingleChildScrollView(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top,
+              minHeight: MediaQuery.of(context).size.height -
+                  MediaQuery.of(context).padding.top,
             ),
             child: IntrinsicHeight(
               child: Center(
@@ -199,16 +205,23 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 8),
                         Text(
                           'Silakan login untuk melanjutkan',
-                          style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          style: TextStyle(
+                              fontSize: 16,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant),
                         ),
                         const SizedBox(height: 40),
                         TextField(
                           controller: _kodeController,
                           decoration: InputDecoration(
-                            prefixIcon: Icon(Icons.person_outline, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            prefixIcon: Icon(Icons.person_outline,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant),
                             hintText: 'Login',
                             filled: true,
-                            fillColor: Theme.of(context).colorScheme.surface, 
+                            fillColor: Theme.of(context).colorScheme.surface,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
@@ -221,10 +234,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _passwordController,
                           obscureText: !_isPasswordVisible,
                           decoration: InputDecoration(
-                            prefixIcon: Icon(Icons.lock_outline, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            prefixIcon: Icon(Icons.lock_outline,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant),
                             hintText: 'Password',
                             filled: true,
-                            fillColor: Theme.of(context).colorScheme.surface, 
+                            fillColor: Theme.of(context).colorScheme.surface,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
@@ -234,7 +250,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 _isPasswordVisible
                                     ? Icons.visibility_off_outlined
                                     : Icons.visibility_outlined,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                               ),
                               onPressed: () {
                                 setState(() {
@@ -265,8 +283,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           width: double.infinity,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context).colorScheme.primary,
-                              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.primary,
+                              foregroundColor:
+                                  Theme.of(context).colorScheme.onPrimary,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -280,8 +300,25 @@ class _LoginScreenState extends State<LoginScreen> {
                                     child: CircularProgressIndicator(
                                         strokeWidth: 3, color: Colors.white),
                                   )
-                                : const Text('Login', style: TextStyle(fontSize: 16)),
+                                : const Text('Login',
+                                    style: TextStyle(fontSize: 16)),
                           ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: _isLoading
+                              ? null
+                              : () async {
+                                  final changed =
+                                      await showChangePasswordDialog(
+                                    context,
+                                    initialKode: _kodeController.text,
+                                  );
+                                  // Kosongkan password lama yang masih terisi di form login
+                                  if (changed && mounted)
+                                    _passwordController.clear();
+                                },
+                          child: const Text('Ganti Password'),
                         ),
                         const Spacer(flex: 2),
                         Image.asset(
@@ -294,7 +331,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           padding: const EdgeInsets.only(bottom: 16.0),
                           child: Text(
                             'Ver. $_appVersion',
-                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant),
                           ),
                         ),
                       ],
