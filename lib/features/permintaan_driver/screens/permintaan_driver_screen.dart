@@ -245,6 +245,8 @@ class _PermintaanDriverScreenState extends State<PermintaanDriverScreen> {
 
   // ---------- UI ----------
 
+  static const double _wideBreakpoint = 900;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -277,140 +279,234 @@ class _PermintaanDriverScreenState extends State<PermintaanDriverScreen> {
 
     return Form(
       key: _formKey,
-      child: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          const Text('Nomor: otomatis saat disimpan'),
-          const SizedBox(height: 16),
-          Text(
-              'Tanggal: ${DateFormat('dd/MM/yyyy HH:mm').format(_tanggalPermintaan)}'),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _tipeJadwalController,
-            readOnly: true,
-            decoration: InputDecoration(
-              labelText: 'Tipe Jadwal',
-              border: const OutlineInputBorder(),
-              filled: true,
-              fillColor: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.08),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _customerController,
-            decoration: const InputDecoration(
-                labelText: 'Customer', border: OutlineInputBorder()),
-            validator: (value) =>
-                value!.isEmpty ? 'Customer tidak boleh kosong' : null,
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _pengambilanController,
-            decoration: const InputDecoration(
-                labelText: 'Pengambilan', border: OutlineInputBorder()),
-            validator: (value) =>
-                value!.isEmpty ? 'Pengambilan tidak boleh kosong' : null,
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _picController,
-            decoration: const InputDecoration(
-                labelText: 'PIC', border: OutlineInputBorder()),
-            validator: (value) =>
-                value!.isEmpty ? 'PIC tidak boleh kosong' : null,
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _uraianController,
-            decoration: const InputDecoration(
-                labelText: 'Uraian', border: OutlineInputBorder()),
-            maxLines: 3,
-            validator: (value) =>
-                value!.isEmpty ? 'Uraian tidak boleh kosong' : null,
-          ),
-          const SizedBox(height: 16),
-          const Text('Jam Kerja'),
-          Row(
-            children: [
-              Expanded(child: Text(_jamKerja.format(context))),
-              IconButton(
-                icon: const Icon(Icons.access_time),
-                onPressed: () async {
-                  final pickedTime = await showTimePicker(
-                      context: context, initialTime: _jamKerja);
-                  if (pickedTime != null) {
-                    setState(() => _jamKerja = pickedTime);
-                  }
-                },
-              ),
-              Radio<HariKerja>(
-                  value: HariKerja.hariIni,
-                  groupValue: _hariKerja,
-                  onChanged: (v) => setState(() {
-                        _hariKerja = v!;
-                        _updateTipeJadwal();
-                      })),
-              const Text('Hari Ini'),
-              Radio<HariKerja>(
-                  value: HariKerja.besok,
-                  groupValue: _hariKerja,
-                  onChanged: (v) => setState(() {
-                        _hariKerja = v!;
-                        _updateTipeJadwal();
-                      })),
-              const Text('Besok'),
-            ],
-          ),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<String>(
-            value: _status,
-            decoration: const InputDecoration(
-                labelText: 'Status', border: OutlineInputBorder()),
-            items: ['Top Urgent', 'Urgent', 'Tidak'].map((String value) {
-              return DropdownMenuItem<String>(value: value, child: Text(value));
-            }).toList(),
-            onChanged: (value) => setState(() => _status = value),
-            validator: (value) => value == null ? 'Pilih status' : null,
-          ),
-
-          // ----- Barang/Dokumen yang dibawa -----
-          const SizedBox(height: 24),
-          Text(
-            'Barang/Dokumen yang dibawa',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          for (int i = 0; i < _items.length; i++) _buildItemCard(i, _items[i]),
-          OutlinedButton.icon(
-            onPressed: _addItem,
-            icon: const Icon(Icons.add),
-            label: const Text('Tambah Barang/Dokumen'),
-          ),
-
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: _isSaving ? null : _submitForm,
-            child: _isSaving
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Save'),
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth >= _wideBreakpoint) {
+            return _buildWideLayout();
+          }
+          return _buildNarrowLayout();
+        },
       ),
     );
   }
 
-  Widget _buildItemCard(int index, _DetailItem item) {
+  /// Mobile: satu kolom.
+  Widget _buildNarrowLayout() {
+    return ListView(
+      padding: const EdgeInsets.all(16.0),
+      children: [
+        ..._buildHeaderFields(),
+        const SizedBox(height: 24),
+        ..._buildItemsSection(wide: false),
+        const SizedBox(height: 24),
+        _buildSaveButton(),
+      ],
+    );
+  }
+
+  /// Web/desktop: kiri = data permintaan, kanan = barang/dokumen.
+  Widget _buildWideLayout() {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1200),
+        child: Column(
+          children: [
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 5,
+                    child: ListView(
+                      padding: const EdgeInsets.all(24),
+                      children: [
+                        Text(
+                          'Data Permintaan',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 16),
+                        ..._buildHeaderFields(),
+                      ],
+                    ),
+                  ),
+                  const VerticalDivider(width: 1),
+                  Expanded(
+                    flex: 6,
+                    child: ListView(
+                      padding: const EdgeInsets.all(24),
+                      children: _buildItemsSection(wide: true),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: SizedBox(width: 220, child: _buildSaveButton()),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Field header: Nomor sampai Status.
+  List<Widget> _buildHeaderFields() {
+    return [
+      const Text('Nomor: otomatis saat disimpan'),
+      const SizedBox(height: 16),
+      Text(
+          'Tanggal: ${DateFormat('dd/MM/yyyy HH:mm').format(_tanggalPermintaan)}'),
+      const SizedBox(height: 16),
+      TextFormField(
+        controller: _tipeJadwalController,
+        readOnly: true,
+        decoration: InputDecoration(
+          labelText: 'Tipe Jadwal',
+          border: const OutlineInputBorder(),
+          filled: true,
+          fillColor:
+              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
+        ),
+      ),
+      const SizedBox(height: 16),
+      TextFormField(
+        controller: _customerController,
+        decoration: const InputDecoration(
+            labelText: 'Customer', border: OutlineInputBorder()),
+        validator: (value) =>
+            value!.isEmpty ? 'Customer tidak boleh kosong' : null,
+      ),
+      const SizedBox(height: 16),
+      TextFormField(
+        controller: _pengambilanController,
+        decoration: const InputDecoration(
+            labelText: 'Pengambilan', border: OutlineInputBorder()),
+        validator: (value) =>
+            value!.isEmpty ? 'Pengambilan tidak boleh kosong' : null,
+      ),
+      const SizedBox(height: 16),
+      TextFormField(
+        controller: _picController,
+        decoration: const InputDecoration(
+            labelText: 'PIC', border: OutlineInputBorder()),
+        validator: (value) => value!.isEmpty ? 'PIC tidak boleh kosong' : null,
+      ),
+      const SizedBox(height: 16),
+      TextFormField(
+        controller: _uraianController,
+        decoration: const InputDecoration(
+            labelText: 'Uraian', border: OutlineInputBorder()),
+        maxLines: 3,
+        validator: (value) =>
+            value!.isEmpty ? 'Uraian tidak boleh kosong' : null,
+      ),
+      const SizedBox(height: 16),
+      const Text('Jam Kerja'),
+      Row(
+        children: [
+          Expanded(child: Text(_jamKerja.format(context))),
+          IconButton(
+            icon: const Icon(Icons.access_time),
+            onPressed: () async {
+              final pickedTime = await showTimePicker(
+                  context: context, initialTime: _jamKerja);
+              if (pickedTime != null) {
+                setState(() => _jamKerja = pickedTime);
+              }
+            },
+          ),
+          Radio<HariKerja>(
+              value: HariKerja.hariIni,
+              groupValue: _hariKerja,
+              onChanged: (v) => setState(() {
+                    _hariKerja = v!;
+                    _updateTipeJadwal();
+                  })),
+          const Text('Hari Ini'),
+          Radio<HariKerja>(
+              value: HariKerja.besok,
+              groupValue: _hariKerja,
+              onChanged: (v) => setState(() {
+                    _hariKerja = v!;
+                    _updateTipeJadwal();
+                  })),
+          const Text('Besok'),
+        ],
+      ),
+      const SizedBox(height: 16),
+      DropdownButtonFormField<String>(
+        value: _status,
+        decoration: const InputDecoration(
+            labelText: 'Status', border: OutlineInputBorder()),
+        items: ['Top Urgent', 'Urgent', 'Tidak'].map((String value) {
+          return DropdownMenuItem<String>(value: value, child: Text(value));
+        }).toList(),
+        onChanged: (value) => setState(() => _status = value),
+        validator: (value) => value == null ? 'Pilih status' : null,
+      ),
+    ];
+  }
+
+  /// Judul + daftar item + tombol tambah.
+  List<Widget> _buildItemsSection({required bool wide}) {
+    return [
+      Text(
+        'Barang/Dokumen yang dibawa',
+        style: Theme.of(context)
+            .textTheme
+            .titleMedium
+            ?.copyWith(fontWeight: FontWeight.bold),
+      ),
+      const SizedBox(height: 12),
+      for (int i = 0; i < _items.length; i++)
+        _buildItemCard(i, _items[i], wide: wide),
+      OutlinedButton.icon(
+        onPressed: _addItem,
+        icon: const Icon(Icons.add),
+        label: const Text('Tambah Barang/Dokumen'),
+      ),
+    ];
+  }
+
+  Widget _buildSaveButton() {
+    return ElevatedButton(
+      onPressed: _isSaving ? null : _submitForm,
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+      ),
+      child: _isSaving
+          ? const SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Text('Save'),
+    );
+  }
+
+  Widget _buildItemCard(int index, _DetailItem item, {required bool wide}) {
     final hasSpk = item.spk.isNotEmpty;
+
+    final ketField = TextFormField(
+      controller: item.ketController,
+      decoration: const InputDecoration(
+          labelText: 'Keterangan', border: OutlineInputBorder()),
+      maxLines: 2,
+    );
+
+    final penerimaField = TextFormField(
+      controller: item.penerimaController,
+      decoration: const InputDecoration(
+          labelText: 'Penerima (opsional)', border: OutlineInputBorder()),
+    );
 
     return Card(
       key: ObjectKey(item), // menjaga isi field saat ada baris yang dihapus
@@ -476,19 +572,20 @@ class _PermintaanDriverScreenState extends State<PermintaanDriverScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: item.ketController,
-              decoration: const InputDecoration(
-                  labelText: 'Keterangan', border: OutlineInputBorder()),
-              maxLines: 2,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: item.penerimaController,
-              decoration: const InputDecoration(
-                  labelText: 'Penerima (opsional)',
-                  border: OutlineInputBorder()),
-            ),
+            if (wide)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 3, child: ketField),
+                  const SizedBox(width: 12),
+                  Expanded(flex: 2, child: penerimaField),
+                ],
+              )
+            else ...[
+              ketField,
+              const SizedBox(height: 12),
+              penerimaField,
+            ],
           ],
         ),
       ),
